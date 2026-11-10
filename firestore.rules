@@ -1,0 +1,173 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidWorkoutSession(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.workoutName is string && data.workoutName.size() > 0 && data.workoutName.size() <= 100 &&
+             data.completedDate is string && data.completedDate.size() == 10 &&
+             (!('dayOfWeek' in data) || (data.dayOfWeek is string && data.dayOfWeek.size() <= 20)) &&
+             (!('durationMinutes' in data) || (data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 1440)) &&
+             (!('totalVolumeKg' in data) || (data.totalVolumeKg is int && data.totalVolumeKg >= 0 && data.totalVolumeKg <= 500000)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
+             (!('exercises' in data) || (data.exercises is list && data.exercises.size() <= 50));
+    }
+
+    function isValidMealLog(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.date is string && data.date.size() == 10 &&
+             data.mealType is string && data.mealType in ['breakfast', 'lunch', 'dinner', 'snack'] &&
+             data.foodName is string && data.foodName.size() > 0 && data.foodName.size() <= 100 &&
+             (!('servingSize' in data) || (data.servingSize is string && data.servingSize.size() <= 50)) &&
+             (!('servings' in data) || (data.servings is number && data.servings >= 0.1 && data.servings <= 50.0)) &&
+             data.calories is int && data.calories >= 0 && data.calories <= 10000 &&
+             data.protein is int && data.protein >= 0 && data.protein <= 1000 &&
+             data.carbs is int && data.carbs >= 0 && data.carbs <= 1000 &&
+             data.fat is int && data.fat >= 0 && data.fat <= 1000;
+    }
+
+    function isValidCustomFood(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('serving' in data) || (data.serving is string && data.serving.size() <= 50)) &&
+             data.calories is int && data.calories >= 0 && data.calories <= 5000 &&
+             data.protein is int && data.protein >= 0 && data.protein <= 500 &&
+             data.carbs is int && data.carbs >= 0 && data.carbs <= 500 &&
+             data.fat is int && data.fat >= 0 && data.fat <= 500;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.dailyCalorieTarget is int && data.dailyCalorieTarget >= 500 && data.dailyCalorieTarget <= 15000 &&
+             data.dailyProteinTarget is int && data.dailyProteinTarget >= 0 && data.dailyProteinTarget <= 1000 &&
+             (!('dailyCarbsTarget' in data) || (data.dailyCarbsTarget is int && data.dailyCarbsTarget >= 0 && data.dailyCarbsTarget <= 1000)) &&
+             (!('dailyFatTarget' in data) || (data.dailyFatTarget is int && data.dailyFatTarget >= 0 && data.dailyFatTarget <= 1000)) &&
+             (!('experienceLevel' in data) || (data.experienceLevel is string && data.experienceLevel.size() <= 50));
+    }
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+      match /workouts/{workoutId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(workoutId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidWorkoutSession(incoming()) &&
+                         incoming().keys().hasAll(['userId', 'workoutName', 'completedDate', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'workoutName', 'dayOfWeek', 'completedDate', 'durationMinutes', 'totalVolumeKg', 'exercises', 'notes', 'createdAt', 'updatedAt']);
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt <= request.time &&
+                         isValidWorkoutSession(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['workoutName', 'dayOfWeek', 'completedDate', 'durationMinutes', 'totalVolumeKg', 'exercises', 'notes', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /meals/{mealId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(mealId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidMealLog(incoming()) &&
+                         incoming().keys().hasAll(['userId', 'date', 'mealType', 'foodName', 'calories', 'protein', 'carbs', 'fat', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'date', 'mealType', 'foodName', 'servingSize', 'servings', 'calories', 'protein', 'carbs', 'fat', 'createdAt', 'updatedAt']);
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt <= request.time &&
+                         isValidMealLog(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['date', 'mealType', 'foodName', 'servingSize', 'servings', 'calories', 'protein', 'carbs', 'fat', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /custom_foods/{foodId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(foodId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidCustomFood(incoming()) &&
+                         incoming().keys().hasAll(['userId', 'name', 'calories', 'protein', 'carbs', 'fat', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'name', 'serving', 'calories', 'protein', 'carbs', 'fat', 'createdAt', 'updatedAt']);
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt <= request.time &&
+                         isValidCustomFood(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'serving', 'calories', 'protein', 'carbs', 'fat', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /profile/{profileId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(profileId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidUserProfile(incoming()) &&
+                         incoming().keys().hasAll(['userId', 'dailyCalorieTarget', 'dailyProteinTarget', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'dailyCalorieTarget', 'dailyProteinTarget', 'dailyCarbsTarget', 'dailyFatTarget', 'experienceLevel', 'createdAt', 'updatedAt']);
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt <= request.time &&
+                         isValidUserProfile(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['dailyCalorieTarget', 'dailyProteinTarget', 'dailyCarbsTarget', 'dailyFatTarget', 'experienceLevel', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "WorkoutSession": {
+      "title": "WorkoutSession",
+      "description": "Logged completed gym workout session with exercise details, sets, reps, weight, and volume.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "userId": { "type": "string", "description": "Owner Google User ID" },
+        "workoutName": { "type": "string", "description": "Routine title, e.g. Day 1: Full Body A" },
+        "dayOfWeek": { "type": "string", "description": "Day of the week" },
+        "completedDate": { "type": "string", "description": "Date formatted YYYY-MM-DD" },
+        "durationMinutes": { "type": "integer", "description": "Duration of workout in minutes" },
+        "totalVolumeKg": { "type": "integer", "description": "Total lifted weight volume across all sets" },
+        "exercises": { "type": "array", "description": "List of completed exercises and sets" },
+        "notes": { "type": "string", "description": "User notes or observations" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp via serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp via serverTimestamp()" }
+      },
+      "required": ["userId", "workoutName", "completedDate", "createdAt"]
+    },
+    "MealLog": {
+      "title": "MealLog",
+      "description": "Nutritional meal log record tracking consumed calories and macronutrients.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "userId": { "type": "string", "description": "Owner Google User ID" },
+        "date": { "type": "string", "description": "Date formatted YYYY-MM-DD" },
+        "mealType": { "type": "string", "description": "Category: breakfast, lunch, dinner, snack" },
+        "foodName": { "type": "string", "description": "Food item description" },
+        "servingSize": { "type": "string", "description": "Serving description" },
+        "servings": { "type": "number", "description": "Number of servings consumed" },
+        "calories": { "type": "integer", "description": "Energy in kcal" },
+        "protein": { "type": "integer", "description": "Protein in grams" },
+        "carbs": { "type": "integer", "description": "Carbohydrates in grams" },
+        "fat": { "type": "integer", "description": "Fat in grams" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp via serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp via serverTimestamp()" }
+      },
+      "required": ["userId", "date", "mealType", "foodName", "calories", "protein", "carbs", "fat", "createdAt"]
+    },
+    "CustomFood": {
+      "title": "CustomFood",
+      "description": "User custom saved food item added to the nutrition database.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "userId": { "type": "string", "description": "Owner Google User ID" },
+        "name": { "type": "string", "description": "Food name" },
+        "serving": { "type": "string", "description": "Standard serving size text" },
+        "calories": { "type": "integer", "description": "Calories per serving" },
+        "protein": { "type": "integer", "description": "Protein grams" },
+        "carbs": { "type": "integer", "description": "Carbs grams" },
+        "fat": { "type": "integer", "description": "Fat grams" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp via serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp via serverTimestamp()" }
+      },
+      "required": ["userId", "name", "calories", "protein", "carbs", "fat", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User fitness preferences and daily macronutrient targets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "userId": { "type": "string", "description": "Owner Google User ID" },
+        "dailyCalorieTarget": { "type": "integer", "description": "Target daily calories" },
+        "dailyProteinTarget": { "type": "integer", "description": "Target daily protein in grams" },
+        "dailyCarbsTarget": { "type": "integer", "description": "Target daily carbs in grams" },
+        "dailyFatTarget": { "type": "integer", "description": "Target daily fat in grams" },
+        "experienceLevel": { "type": "string", "description": "Beginner, Intermediate, Advanced" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp via serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp via serverTimestamp()" }
+      },
+      "required": ["userId", "dailyCalorieTarget", "dailyProteinTarget", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/workouts/{workoutId}": {
+      "schema": { "$ref": "#/entities/WorkoutSession" },
+      "description": "Workout sessions logged by the user, tracked in calendar"
+    },
+    "/users/{userId}/meals/{mealId}": {
+      "schema": { "$ref": "#/entities/MealLog" },
+      "description": "Meals logged by the user for daily nutrition tracking"
+    },
+    "/users/{userId}/custom_foods/{foodId}": {
+      "schema": { "$ref": "#/entities/CustomFood" },
+      "description": "Custom foods created by the user"
+    },
+    "/users/{userId}/profile/{profileId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User macro goals and gym experience profile"
+    }
+  }
+}

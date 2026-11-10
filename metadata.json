@@ -1,0 +1,6 @@
+{
+  "name": "Apex Gym",
+  "description": "Beginner full-body workout routine planner, live session tracking with rest timers, calendar consistency view, and macro nutrition tracker.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

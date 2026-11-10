@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Apex Gym</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_in_subtitle">Track workouts, log consistency on calendar, and monitor macro nutrition</string>
+    <string name="workout_plan_title">Full-Body Beginner Program</string>
+    <string name="workout_plan_subtitle">3 days/week full-body strength routine designed for steady progression</string>
+    <string name="calendar_title">Workout Calendar</string>
+    <string name="nutrition_title">Daily Nutrition</string>
+</resources>
